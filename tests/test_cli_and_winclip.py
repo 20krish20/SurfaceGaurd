@@ -6,7 +6,6 @@ import sys
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from conftest import REPO_ROOT, load_tool
 from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES
@@ -41,17 +40,18 @@ def test_eval_cli_category_parsing(toy_root: Path, tmp_path: Path) -> None:
     assert parse(_eval_args("all"), str(tmp_path / "none")) == list(MVTec_AD_15_CATEGORIES)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Known issue: '--categories all' only looks for the 15 MVTec AD names, so a dataset with its own "
-        "categories (e.g. the toy set or a new domain) resolves to MVTec names that don't exist on disk. "
-        "Remove this marker once 'all' means 'every category folder under the dataset root'."
-    ),
-)
 def test_eval_cli_all_uses_categories_on_disk(toy_root: Path) -> None:
+    # Regression: "all" used to resolve to the 15 MVTec AD names even for other datasets.
     parse = load_tool("eval")._parse_categories
     assert parse(_eval_args("all"), str(toy_root)) == ["toy"]
+
+
+def test_benchmark_all_resolves_categories_from_disk(toy_root: Path, tmp_path: Path) -> None:
+    as_list = load_tool("benchmark_all")._as_list
+    assert as_list("all", str(toy_root)) == ["toy"]
+    assert as_list("", str(toy_root)) == ["toy"]
+    assert as_list("a, b", str(toy_root)) == ["a", "b"]
+    assert as_list("all", str(tmp_path / "none")) == list(MVTec_AD_15_CATEGORIES)
 
 
 class _FakeWinCLIPEngine:

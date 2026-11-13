@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import List
 
-from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES, resolve_mvtec_categories
+from surfaceguard.data.mvtec import all_categories, resolve_mvtec_categories
 from surfaceguard.utils.config import load_yaml
 from surfaceguard.eval.runner import eval_method_for_category
 
@@ -15,7 +15,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--config", required=True, type=str)
     p.add_argument("--method", required=True, choices=["patchcore", "winclip"])
     p.add_argument("--category", default="", type=str, help="Single category (deprecated; use --categories).")
-    p.add_argument("--categories", default="all", type=str, help="Comma list or 'all' for all 15 MVTec AD categories.")
+    p.add_argument("--categories", default="all", type=str, help="Comma list, or 'all' for every category folder under the dataset root.")
     p.add_argument("--out_summary", default="", type=str, help="Optional output path for aggregated summary JSON.")
     return p.parse_args()
 
@@ -25,7 +25,7 @@ def _parse_categories(args: argparse.Namespace, dataset_root: str) -> List[str]:
     if args.category and args.category.strip() and (raw == "all" or not raw):
         return resolve_mvtec_categories(dataset_root, [args.category.strip()])
     if raw == "all" or not raw:
-        return resolve_mvtec_categories(dataset_root, list(MVTec_AD_15_CATEGORIES))
+        return all_categories(dataset_root)
     parsed = [x.strip() for x in args.categories.split(",") if x.strip()]
     if args.category and args.category.strip():
         parsed.append(args.category.strip())

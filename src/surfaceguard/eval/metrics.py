@@ -58,7 +58,8 @@ def au_pro(
 ) -> float:
     """
     Approximate AU-PRO used in industrial anomaly localization.
-    Computes PRO vs FPR curve by thresholding heatmaps.
+    Computes the PRO vs FPR curve by thresholding heatmaps, then integrates it from
+    FPR = 0 to exactly ``max_fpr`` (interpolating the last point) and normalises to [0, 1].
     """
     assert len(masks) == len(heatmaps)
     # normalize heatmaps to [0,1] jointly
@@ -67,8 +68,13 @@ def au_pro(
     if mx - mn < 1e-8:
         return 0.0
     heatmaps_n = [(h - mn) / (mx - mn) for h in heatmaps]
+    all_scores_n = (all_scores - mn) / (mx - mn)
 
-    thrs = np.linspace(0.0, 1.0, num_thresholds, dtype=np.float32)
+    # Thresholds at score quantiles rather than evenly spaced values: one very hot pixel no longer
+    # squeezes every other score into the first few thresholds. The extra threshold above the max
+    # gives the curve its (FPR=0, PRO=0) starting point.
+    thrs = np.unique(np.quantile(all_scores_n, np.linspace(0.0, 1.0, num_thresholds)).astype(np.float32))
+    thrs = np.append(thrs, np.float32(1.0 + 1e-6))
     pro_vals = []
     fpr_vals = []
 
@@ -87,19 +93,18 @@ def au_pro(
         pro_vals.append(float(np.mean(pros)))
         fpr_vals.append(float(fpr))
 
-    # sort by fpr, integrate up to max_fpr
-    fpr_arr = np.array(fpr_vals, dtype=np.float32)
-    pro_arr = np.array(pro_vals, dtype=np.float32)
-    order = np.argsort(fpr_arr)
+    # Sort by FPR (ties by PRO, so vertical steps are integrated correctly).
+    fpr_arr = np.array(fpr_vals, dtype=np.float64)
+    pro_arr = np.array(pro_vals, dtype=np.float64)
+    order = np.lexsort((pro_arr, fpr_arr))
     fpr_arr = fpr_arr[order]
     pro_arr = pro_arr[order]
 
-    # clip to max_fpr
-    mask = fpr_arr <= max_fpr
-    if mask.sum() < 2:
-        return 0.0
-    fpr_clip = fpr_arr[mask]
-    pro_clip = pro_arr[mask]
+    # Integrate up to exactly max_fpr: keep points inside the range, then close the curve with
+    # PRO interpolated at max_fpr. (Stopping at the last *sampled* point under-reported the area.)
+    keep = fpr_arr <= max_fpr
+    fpr_clip = np.append(fpr_arr[keep], max_fpr)
+    pro_clip = np.append(pro_arr[keep], np.interp(max_fpr, fpr_arr, pro_arr))
     area = auc(fpr_clip, pro_clip) / max_fpr
-    return float(area)
+    return float(np.clip(area, 0.0, 1.0))
 

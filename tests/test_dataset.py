@@ -10,6 +10,8 @@ from PIL import Image
 from surfaceguard.data.mvtec import (
     MVTec_AD_15_CATEGORIES,
     MVTecADDataset,
+    all_categories,
+    discover_categories,
     mvtec_category_names,
     resolve_mvtec_categories,
 )
@@ -88,3 +90,21 @@ def test_category_resolution(toy_root: Path, tmp_path: Path) -> None:
     assert resolve_mvtec_categories(toy_root, ["toy", "bottle"]) == ["toy"]
     # No dataset on disk yet: fall back to the full MVTec AD list.
     assert resolve_mvtec_categories(tmp_path / "missing") == list(MVTec_AD_15_CATEGORIES)
+
+
+def test_discovery_finds_any_mvtec_style_category(tmp_path: Path, make_toy) -> None:
+    make_toy(tmp_path, "battery_2170", n_train=2, n_test_good=1, n_test_bad=1)
+    (tmp_path / "test_only_cat" / "test" / "good").mkdir(parents=True)  # eval-only category
+    (tmp_path / ".cache").mkdir()  # stray folders without the layout are ignored
+    (tmp_path / "license").mkdir()
+    (tmp_path / "README.txt").write_text("not a category")
+
+    assert discover_categories(tmp_path) == ["battery_2170", "test_only_cat"]
+    assert all_categories(tmp_path) == ["battery_2170", "test_only_cat"]
+    # "all" with no explicit list now means "everything on disk".
+    assert resolve_mvtec_categories(tmp_path) == ["battery_2170", "test_only_cat"]
+
+
+def test_all_categories_falls_back_to_mvtec_names(tmp_path: Path) -> None:
+    assert discover_categories(tmp_path / "missing") == []
+    assert all_categories(tmp_path / "missing") == list(MVTec_AD_15_CATEGORIES)

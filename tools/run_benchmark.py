@@ -12,7 +12,7 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES, resolve_mvtec_categories
+from surfaceguard.data.mvtec import all_categories, resolve_mvtec_categories
 from surfaceguard.eval.runner import eval_method_for_category
 from surfaceguard.train.patchcore_trainer import train_patchcore_for_category
 from surfaceguard.utils.config import load_yaml
@@ -62,7 +62,7 @@ def main() -> None:
     wc_cfg = load_yaml(args.winclip_config)
 
     if args.all_categories or (args.categories or "").strip().lower() == "all":
-        categories = resolve_mvtec_categories(pc_cfg["data"]["root"], list(MVTec_AD_15_CATEGORIES))
+        categories = all_categories(pc_cfg["data"]["root"])
     else:
         categories = resolve_mvtec_categories(pc_cfg["data"]["root"], _parse_csv(args.categories))
 

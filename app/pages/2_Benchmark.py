@@ -5,25 +5,27 @@ from pathlib import Path
 
 import streamlit as st
 
-from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES, resolve_mvtec_categories
+from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES, all_categories, resolve_mvtec_categories
 from surfaceguard.eval.runner import eval_method_for_category
 from surfaceguard.utils.config import load_yaml
 
 
 def main() -> None:
-    st.header("Benchmark (MVTec AD)")
+    st.header("Benchmark")
     st.caption("Runs evaluation and writes per-category JSON reports into outputs/.")
 
     method = st.selectbox("Method", ["patchcore", "winclip"], index=0)
-    categories = st.multiselect(
-        "Categories",
-        list(MVTec_AD_15_CATEGORIES),
-        default=list(MVTec_AD_15_CATEGORIES),
-    )
     config_path = st.text_input(
         "Config path",
         value="configs/patchcore_mvtec.yaml" if method == "patchcore" else "configs/winclip_mvtec.yaml",
     )
+    # Offer the categories that exist under the config's dataset root (MVTec AD or any custom dataset).
+    try:
+        options = all_categories(str(load_yaml(config_path)["data"]["root"]))
+    except Exception:  # missing or malformed config: fall back to the MVTec AD names
+        st.warning(f"Could not read a dataset root from {config_path}.")
+        options = list(MVTec_AD_15_CATEGORIES)
+    categories = st.multiselect("Categories", options, default=options)
 
     if st.button("Run evaluation"):
         cfg = load_yaml(config_path)

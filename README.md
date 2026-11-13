@@ -4,6 +4,15 @@
 
 Industrial surface anomaly detection and localization with a deployable Streamlit UI.
 
+### About this fork
+SurfaceGuard started as a team project for our computer vision course in the MS in Data Science program at the University of Maryland (Spring 2026), built by **Harsh Shrishrimal**, **Rishabh Ranka** and **Krishnendra Tomar**. The original repo is [harshshri07/SurfaceGaurd](https://github.com/harshshri07/SurfaceGaurd).
+
+This fork is where I (Krishnendra) keep extending it. My additions so far:
+- **Test suite + CI**: 59 tests that run in about 10 seconds on a CPU with no downloads, plus a GitHub Actions pipeline (lint + tests on Python 3.10 and 3.12) on every push. See [Tests](#tests).
+- **Two bugs found by those tests, now fixed:**
+  - **AU-PRO was under-reported.** The localization metric stopped integrating at the last sampled point instead of at FPR = 0.3, so a perfect heatmap scored 0.0 and heatmaps with one very hot pixel scored too low. It now integrates to exactly 0.3 and, in synthetic checks, matches a dense reference calculation to within 0.001.
+  - **`--categories all` only knew the 15 MVTec AD names.** The eval and benchmark scripts and the Benchmark page now use whatever category folders exist under the dataset root, so a new dataset works without code changes.
+
 ### What you get
 - **PatchCore**: train on normal images, detect + localize defects with anomaly heatmaps.
 - **WinCLIP (practical variant)**: CLIP-based anomaly scoring with windowed heatmaps (zero/few-shot style).
@@ -53,7 +62,7 @@ Open the URL shown in the terminal.
 
 ### Setup (Windows PowerShell)
 ```powershell
-cd "C:\Users\shris\OneDrive\Desktop\SurfaceGaurd\SurfaceGaurd"
+cd "path\to\SurfaceGaurd"
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -U pip
@@ -128,7 +137,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 pytest
 ```
 
-What's covered: dataset loading and mask pairing, metrics (AUROC, F1, AU-PRO), PatchCore internals (patching, coreset selection, scoring), visualisation helpers, the CLIs, and an end-to-end **train → load → evaluate → infer** run. Tests marked `xfail` document known issues; delete the marker when the fix lands.
+What's covered: dataset loading and mask pairing, metrics (AUROC, F1, AU-PRO), PatchCore internals (patching, coreset selection, scoring), visualisation helpers, the CLIs, and an end-to-end **train → load → evaluate → infer** run. The two bug fixes above each have a regression test that fails on the old code.
 
 GitHub Actions (`.github/workflows/ci.yml`) runs a lint check for syntax errors and undefined names, then the tests on Python 3.10 (the Docker/HF Space version) and 3.12, on every push to `main` and every pull request.
 

@@ -73,17 +73,21 @@ def test_au_pro_rewards_good_localisation() -> None:
     assert good > random
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "Known issue: au_pro() integrates only up to the largest *sampled* FPR <= max_fpr instead of "
-        "interpolating PRO at max_fpr, so a perfect binary heatmap scores 0.0 (and spiky heatmaps are "
-        "under-estimated). Remove this marker once the curve is interpolated at max_fpr."
-    ),
-)
 def test_au_pro_perfect_binary_heatmap_scores_one() -> None:
+    # Regression: this used to score 0.0 because the curve stopped at the last sampled FPR.
     masks = _blobs(np.random.default_rng(0))
-    assert au_pro(masks, [m.astype(np.float32) for m in masks]) == pytest.approx(1.0, abs=1e-3)
+    assert au_pro(masks, [m.astype(np.float32) for m in masks]) == pytest.approx(1.0, abs=1e-6)
+    assert au_pro(masks, [(1 - m).astype(np.float32) for m in masks]) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_au_pro_is_robust_to_a_single_hot_pixel() -> None:
+    # Regression: one extreme pixel squeezed the evenly spaced thresholds and under-reported AU-PRO.
+    rng = np.random.default_rng(1)
+    masks = _blobs(rng, n=4, size=64)
+    maps = [(0.3 * m + 0.7 * rng.random(m.shape)).astype(np.float32) for m in masks]
+    spiky = [h.copy() for h in maps]
+    spiky[0][0, 0] = 10.0
+    assert abs(au_pro(masks, spiky) - au_pro(masks, maps)) < 0.03
 
 
 def test_au_pro_constant_heatmap_scores_zero() -> None:

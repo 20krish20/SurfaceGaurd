@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List
 
-from surfaceguard.data.mvtec import MVTec_AD_15_CATEGORIES
+from surfaceguard.data.mvtec import all_categories
 from surfaceguard.eval.runner import eval_method_for_category
 from surfaceguard.utils.config import load_yaml
 from surfaceguard.utils.io import ensure_dir
@@ -19,10 +19,10 @@ def parse_args() -> argparse.Namespace:
     return p.parse_args()
 
 
-def _as_list(s: str) -> List[str]:
+def _as_list(s: str, dataset_root: str) -> List[str]:
     s = (s or "").strip()
     if not s or s.lower() == "all":
-        return list(MVTec_AD_15_CATEGORIES)
+        return all_categories(dataset_root)
     return [x.strip() for x in s.split(",") if x.strip()]
 
 
@@ -33,7 +33,7 @@ def main() -> None:
     outputs_dir = Path(cfg.get("outputs", {}).get("dir", "outputs"))
     reports_dir = ensure_dir(outputs_dir / "reports")
 
-    categories = _as_list(args.categories)
+    categories = _as_list(args.categories, dataset_root=str(cfg["data"]["root"]))
     methods = ["patchcore", "winclip"] if args.method == "both" else [args.method]
 
     results: List[Dict[str, Any]] = []

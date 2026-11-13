@@ -160,10 +160,31 @@ def mvtec_category_names(root: str | Path) -> List[str]:
     return sorted([d.name for d in root_p.iterdir() if d.is_dir()])
 
 
+def discover_categories(root: str | Path) -> List[str]:
+    """
+    Category folders under ``root`` that follow the MVTec layout (contain ``train/good`` or ``test``).
+    Works for any dataset arranged that way, not just MVTec AD (e.g. the toy set or battery CT slices).
+    Stray folders without that layout (caches, licence folders, ...) are ignored.
+    """
+    root_p = Path(root)
+    if not root_p.is_dir():
+        return []
+    return sorted(
+        d.name
+        for d in root_p.iterdir()
+        if d.is_dir() and ((d / "train" / "good").is_dir() or (d / "test").is_dir())
+    )
+
+
+def all_categories(root: str | Path) -> List[str]:
+    """What "all" means: every category found on disk, or the 15 MVTec AD names if none are there yet."""
+    return discover_categories(root) or list(MVTec_AD_15_CATEGORIES)
+
+
 def resolve_mvtec_categories(root: str | Path, categories: Optional[List[str]] = None) -> List[str]:
     requested = [c.strip() for c in (categories or []) if c and c.strip()]
     if not requested:
-        requested = list(MVTec_AD_15_CATEGORIES)
+        return all_categories(root)
 
     available = set(mvtec_category_names(root))
     if not available:

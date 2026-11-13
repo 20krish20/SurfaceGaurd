@@ -1,6 +1,6 @@
 ## SurfaceGuard (PatchCore + WinCLIP + Streamlit)
 
-[![CI](https://github.com/harshshri07/SurfaceGaurd/actions/workflows/ci.yml/badge.svg)](https://github.com/harshshri07/SurfaceGaurd/actions/workflows/ci.yml)
+[![CI](https://github.com/20krish20/SurfaceGaurd/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/20krish20/SurfaceGaurd/actions/workflows/ci.yml)
 
 Industrial surface anomaly detection and localization with a deployable Streamlit UI.
 
@@ -10,6 +10,7 @@ Industrial surface anomaly detection and localization with a deployable Streamli
 - **Evaluation**: image AUROC, pixel AUROC, AU-PRO, F1.
 - **UI**: side-by-side model comparison (PatchCore, WinCLIP, Hybrid) and benchmark runner.
 - **Deployment**: **Hugging Face Docker Spaces** — live inference with uploads in the browser.
+- **Tests + CI**: a hermetic `pytest` suite and a GitHub Actions pipeline (lint + tests on Python 3.10 and 3.12) — see [Tests](#tests).
 
 ### Demo: Hugging Face Docker Space
 
@@ -45,6 +46,8 @@ Open the URL shown in the terminal.
 - `configs/`: YAML configs
 - `app/`: Streamlit UI
 - `scripts/`: PowerShell helpers (Windows)
+- `tests/`: pytest suite (synthetic data, no downloads)
+- `.github/workflows/ci.yml`: GitHub Actions pipeline (lint + tests)
 - `data/`: datasets (gitignored)
 - `outputs/`: checkpoints, embeddings, reports (gitignored)
 

@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint (syntax errors & undefined names)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install "ruff==0.17.5"
+      # Only the rules that indicate real bugs; style is left to the authors.
+      - run: ruff check --select E9,F63,F7,F82 --output-format github .
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.10 matches the Hugging Face Docker image; 3.12 catches newer-Python breakage.
+        python-version: ["3.10", "3.12"]
+    env:
+      # The suite is hermetic; fail loudly if anything tries to download from the Hub.
+      HF_HUB_OFFLINE: "1"
+      PIP_DISABLE_PIP_VERSION_CHECK: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+            pyproject.toml
+
+      - name: Install CPU-only PyTorch
+        # Same wheels as the Dockerfile; avoids pulling multi-GB CUDA packages.
+        run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install project + test dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        run: pytest --junitxml=pytest-report.xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-report-py${{ matrix.python-version }}
+          path: pytest-report.xml

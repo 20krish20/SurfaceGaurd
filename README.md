@@ -1,5 +1,7 @@
 ## SurfaceGuard (PatchCore + WinCLIP + Streamlit)
 
+[![CI](https://github.com/harshshri07/SurfaceGaurd/actions/workflows/ci.yml/badge.svg)](https://github.com/harshshri07/SurfaceGaurd/actions/workflows/ci.yml)
+
 Industrial surface anomaly detection and localization with a deployable Streamlit UI.
 
 ### What you get
@@ -113,6 +115,19 @@ Single-image inference:
 ```powershell
 python tools\infer.py --method patchcore --category bottle --image "path/to/image.png" --save_overlay
 ```
+
+### Tests
+
+The test suite is hermetic: it generates a synthetic dataset on the fly and swaps the pretrained backbone for a tiny random one, so it runs in seconds on a CPU and never downloads weights or data.
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest
+```
+
+What's covered: dataset loading and mask pairing, metrics (AUROC, F1, AU-PRO), PatchCore internals (patching, coreset selection, scoring), visualisation helpers, the CLIs, and an end-to-end **train → load → evaluate → infer** run. Tests marked `xfail` document known issues; delete the marker when the fix lands.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs a lint check for syntax errors and undefined names, then the tests on Python 3.10 (the Docker/HF Space version) and 3.12, on every push to `main` and every pull request.
 
 ### Run (UI)
 ```powershell

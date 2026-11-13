@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict
+from typing import TYPE_CHECKING, Dict
 
 import numpy as np
 import torch
+
+if TYPE_CHECKING:  # type-only import: keeps open_clip out of module import time
+    from surfaceguard.models.winclip.core import WinCLIPEngine
 
 
 @dataclass
